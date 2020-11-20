@@ -1,5 +1,7 @@
 #!/usr/bin/python
 import numpy as np
+import random
+import math
 
 import rospy
 from geometry_msgs.msg import Twist 
@@ -21,27 +23,70 @@ class VelocityInterface:
     self._right_joint_names = self._right_arm.joint_names()
 
     # control parameters
-    self._rate = 200.0  # Hz
+    self._rate = 500.0  # Hz
 
     print("Getting robot state... ")
     self._robot_state = baxter_interface.RobotEnable(CHECK_VERSION)
     self._init_state = self._robot_state.state().enabled
     print("Enabling robot... ")
     self._robot_state.enable()
-
+    self.set_neutral()
     # set joint state publishing to 500Hz
-    rospy.Timer(rospy.Duration(1./self._rate), self.velocity_callback)
+    self.start=rospy.Time.now()
+    #rospy.Timer(rospy.Duration(1./self._rate), self.velocity_callback)
+    print("Ready to control in velocity... ")
+   
 
+  def wobble(self):
+      #self.set_neutral()
+      """
+      Performs the wobbling of both arms.
+      """
+      rate = rospy.Rate(self._rate)
+      start = rospy.Time.now()
+
+      def make_v_func():
+          """
+          returns a randomly parameterized cosine function to control a
+          specific joint.
+          """
+          period_factor = random.uniform(0.3, 0.5)
+          amplitude_factor = random.uniform(0.1, 0.2)
+
+          def v_func(elapsed):
+              w = period_factor * elapsed.to_sec()
+              return amplitude_factor * math.cos(w * 2 * math.pi)
+          return v_func
+
+      v_funcs = [make_v_func() for _ in self._right_joint_names]
+      
+      def make_cmd(joint_names, elapsed):
+          return dict([(joint, v_funcs[i](elapsed))
+                        for i, joint in enumerate(joint_names)])
+
+      print("Wobbling. Press Ctrl-C to stop...")
+      while not rospy.is_shutdown():
+          self._pub_rate.publish(self._rate)
+          elapsed = rospy.Time.now() - start
+          #cmd = make_cmd(self._left_joint_names, elapsed)
+          #self._left_arm.set_joint_velocities(cmd)
+          cmd = make_cmd(self._right_joint_names, elapsed)
+          cmd['right_w0'] = 2
+          self._right_arm.set_joint_velocities(cmd)
+          rate.sleep()
+
+  """
   # Send linear and angular velocity (this works at image rate)
   def twist_callback(self, data):
-    """
+    pass
+    
     desired_velocity = np.array([data.linear.x, 
                                  data.linear.y, 
                                  data.linear.z,
                                  data.angular.x, 
                                  data.angular.y, 
                                  data.angular.z]).reshape([6,1])
-    """
+    
     
   # Estimate linear and angular velocity of the end-effector
   def velocity_callback(self, event):
@@ -57,25 +102,33 @@ class VelocityInterface:
     current_velocity = self.velocity_filter(measured_velocity)
 
     # Compute control input in cartesian space
-    desired_velocity = np.array([0,0,0.,0,0,0])
-    reference_velocity = self.velocity_controller(desired_velocity, current_velocity)
+    desired_velocity = np.array([0,0,0.,0,0,0.0]).reshape([6,1])
+    reference_velocity = self.velocity_controller(desired_velocity, desired_velocity)
     
     # Compute control input in joint space
     jacobian_inverse = self.kin.jacobian_pseudo_inverse()
     desired_joint_velocity = np.matmul(jacobian_inverse, reference_velocity)
-    print(desired_joint_velocity)
-    
+
+    # Prepare message to publish
+    desired_joint_velocity[-1,0] = 1.
+    cmd = dict([(joint, desired_joint_velocity[i,0]) for i, joint in enumerate(self._right_joint_names)])
+    #print(cmd)
+    #print(desired_joint_velocity.flatten())
+    self._right_arm.set_joint_velocities(cmd)
+    #print(measured_velocity)
+
   # Filter to remove noise  
   def velocity_filter(self, measured_velocity, current_velocity=None):
     # Some fancy filter here..
-    filtered_velocity = 1.*measured_velocity  
+    filtered_velocity = 1.*measured_velocity.reshape([6,1])  
     return filtered_velocity
   
   # Compute (linear and angular) velocity reference
   def velocity_controller(self, desired_velocity, current_velocity=None):
     # Some fancy control law here..
-    reference_velocity = 1.*desired_velocity
+    reference_velocity = 1.*desired_velocity.reshape([6,1])
     return reference_velocity
+  """
 
   def set_neutral(self):
     """
@@ -110,5 +163,6 @@ if __name__ == "__main__":
   vel_interface = VelocityInterface()
 
   rospy.on_shutdown(vel_interface.clean_shutdown)
-  rospy.spin()
+  vel_interface.wobble()
+  #rospy.spin()
   print("Done.")
