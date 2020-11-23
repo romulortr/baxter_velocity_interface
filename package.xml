@@ -3,7 +3,7 @@
   <name>baxter_velocity_control</name>
   <version>0.0.0</version>
   <description>The baxter_velocity_control package</description>
-  <maintainer email="romulo@todo.todo">romulo</maintainer>
+  <maintainer email="romulortr@fe.up.pt">romulo</maintainer>
 
 
   <license>TODO</license>
@@ -14,8 +14,7 @@
   <build_depend>baxter_interface</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>sensor_msgs</build_depend>
-  <!-- <build_depend>liburdfdom-dev</build_depend> -->
-  <!-- <build_depend>python_orocos_kdl</build_depend> -->
+  <build_depend>nav_msgs</build_depend>  
   <build_depend>tf</build_depend>
 
   <run_depend>rospy</run_depend>
@@ -23,8 +22,8 @@
   <run_depend>baxter_interface</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>sensor_msgs</run_depend>
-  <!-- <run_depend>urdfdom</run_depend> -->
-  <!-- <run_depend>python_orocos_kdl</run_depend> -->
+  <run_depend>nav_msgs</run_depend>
+
   <run_depend>tf</run_depend>
 
 

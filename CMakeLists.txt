@@ -9,6 +9,7 @@ find_package(catkin
   COMPONENTS
   rospy
   geometry_msgs
+  nav_msgs
   sensor_msgs
   tf
   baxter_core_msgs
@@ -20,12 +21,9 @@ catkin_package(
   CATKIN_DEPENDS
   rospy
   geometry_msgs
+  nav_msgs
   sensor_msgs
-#  urdfdom
   tf
   baxter_interface
   baxter_core_msgs
-#  DEPENDS
-#  python_orocos_kdl
-#  urdfdom
 )
