@@ -53,8 +53,10 @@ class VelocityInterface:
     self.filter_timer = rospy.Timer(rospy.Duration(1./self._filter_rate), self.filter_callback)    
     self.velocity_timer = rospy.Timer(rospy.Duration(1./self._velocity_rate), self.velocity_callback)    
 
-  # Send linear and angular velocity (this works at image rate)
   def twist_callback(self, data):
+    """
+    Stores the desired cartesian velocity (link frame)
+    """
     self.desired_velocity = np.array([data.linear.x,
                                       data.linear.y,
                                       data.linear.z,
@@ -65,6 +67,9 @@ class VelocityInterface:
                                   
   # Estimate linear and angular velocity of the end-effector
   def control_callback(self, event):
+    """
+    ADD A DESCRIPTION HERE
+    """
     # Most recent measurement
     joint_position = [self._limb.joint_angle(joint_name) for joint_name in self._joint_names]
     # Compute virtual waypoint to follow  desired joint velocity
@@ -74,7 +79,10 @@ class VelocityInterface:
     joint_command = {joint_name: joint_position[i] + delta[i] for i, joint_name in enumerate(self._joint_names) }
     self._limb.set_joint_positions(joint_command)
     
-  def filter_callback(self, event):       
+  def filter_callback(self, event):     
+    """
+    ADD A DESCRIPTION HERE
+    """  
     # Estimate joint velocity
     joint_position = np.array([self._limb.joint_angle(joint_name) for joint_name in self._joint_names])
     if self.is_filter_active is True:   
@@ -94,32 +102,31 @@ class VelocityInterface:
     self.previous_joint_position = joint_position
 
   def velocity_callback(self, event):
-    # Compute desired velocity in joint space
+    """
+    Transforms the desired cartesian velocity (link frame) to desired joint velocity 
+    and computes an estimate for the current cartesian velocity (link frame).
+    """
+    ## Control loop
+    # Transforming desired cartesian velocity to joint space 
     quat = self.kin.forward_position_kinematics()[3:]
     rotation = scipy.from_quat(quat)
-    base_frame_linear_velocity = rotation.apply(self.desired_velocity[0:3], inverse=False)
-    base_frame_angular_velocity = rotation.apply(self.desired_velocity[3:], inverse=False)
-    base_frame_velocity = np.hstack([base_frame_linear_velocity, base_frame_angular_velocity])
-
-    inverse_jacobian = self.kin.jacobian_pseudo_inverse()
-    desired_joint_velocity = np.matmul(inverse_jacobian, base_frame_velocity.reshape([6,1]))
-    self.desired_joint_velocity = np.array([desired_joint_velocity[0,0],
-                                            desired_joint_velocity[1,0],
-                                            desired_joint_velocity[2,0],
-                                            desired_joint_velocity[3,0],
-                                            desired_joint_velocity[4,0],
-                                            desired_joint_velocity[5,0],
-                                            desired_joint_velocity[6,0]])
+    base_frame_desired_velocity = np.hstack([
+      rotation.apply(self.desired_velocity[0:3], inverse=False),
+      rotation.apply(self.desired_velocity[3:], inverse=False)])
+    jacobian = np.asarray(self.kin.jacobian())
+    inverse_jacobian = np.linalg.pinv(jacobian)
+    self.desired_joint_velocity = np.matmul(inverse_jacobian, base_frame_desired_velocity)
     
+    ## Estimation loop
     # Coompute current velocity in link coordinate sytem
-    jacobian = self.kin.jacobian()
-    base_current_velocity = np.matmul(jacobian, self.current_velocity.reshape([7,1]))
-    base_linear_velocity = np.array([base_current_velocity[0,0],base_current_velocity[1,0],base_current_velocity[2,0]])
-    base_angular_velocity = np.array([base_current_velocity[3,0],base_current_velocity[4,0],base_current_velocity[5,0]])
-    link_current_linear_velocity = rotation.apply(base_linear_velocity, inverse=True)
-    link_current_angular_velocity = rotation.apply(base_angular_velocity, inverse=True)
-    link_current_velocity = np.hstack([link_current_linear_velocity, link_current_angular_velocity])
-    print(link_current_linear_velocity)
+    base_frame_current_cartesian_velocity = np.matmul(jacobian, self.current_velocity)
+    link_frame_current_cartesian_velocity = np.hstack([
+      rotation.apply(base_frame_current_cartesian_velocity[0:3], inverse=True),
+      rotation.apply(base_frame_current_cartesian_velocity[3:], inverse=True)
+    ]) 
+
+    # Write publisher
+    print( link_frame_current_cartesian_velocity)
 
   def set_neutral(self):
     """
