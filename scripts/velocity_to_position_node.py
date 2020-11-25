@@ -15,7 +15,7 @@ import baxter_interface
 from baxter_interface import CHECK_VERSION
 from baxter_pykdl import baxter_kinematics
 
-# @TODO read this parameters from rosparam server
+# @TODO read these parameters from rosparam server
 MAX_PROPORTIONAL_GAIN = .1
 MIN_PROPORTIONAL_GAIN = .001
 INTEGRATOR_ANTI_WINDUP_VALUE = .01
@@ -52,7 +52,7 @@ class VelocityInterface:
 
     # Estimator parameters
     self.is_filter_active = False
-    self.velocity_filter_gain = 0.01    # Low pass filter gain. Value between [0,1], higher implies more filtering/delay
+    self.velocity_filter_gain = 0.05    # Low pass filter gain. Value between [0,1], higher implies more filtering/delay
 
     # internal varialbes
     self.current_joint_velocity = np.zeros(self.nb_joints)
@@ -100,11 +100,12 @@ class VelocityInterface:
       self.current_joint_velocity = (self.velocity_filter_gain) * self.current_joint_velocity + \
             (1-self.velocity_filter_gain)*(joint_position - self.previous_joint_position)/dt
       for i in range(self.nb_joints):
+        error = self.desired_joint_velocity[i] - self.current_joint_velocity[i]
         if self.desired_joint_velocity[i] - self.current_joint_velocity[i] > 0:  
-          self.proportional_gain[i] *= .9 
+          self.proportional_gain[i] *= .9
         else:
           self.proportional_gain[i] *= 1.05
-        self.integrator[i] += .005*(self.desired_joint_velocity[i] - self.current_joint_velocity[i])
+        self.integrator[i] += 2*self.proportional_gain[i]*error
       self.proportional_gain = np.minimum(np.maximum(self.proportional_gain, MIN_PROPORTIONAL_GAIN),
                                            MAX_PROPORTIONAL_GAIN)        
       self.integrator = np.minimum(np.maximum(self.integrator, -INTEGRATOR_ANTI_WINDUP_VALUE), 
