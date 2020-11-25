@@ -2,7 +2,6 @@
 import time
 import numpy as np
 from scipy.spatial.transform import Rotation as scipy
-from matplotlib import pyplot as plt
 
 import rospy
 
@@ -25,7 +24,9 @@ class KeyboardTeleop:
     rospy.Subscriber('robot/odom', Odometry, self.odom_callback)
     rospy.Timer(rospy.Duration(1./rate), self.twist_publisher)  
 
-    self.log_file = open("log_file.txt", "w")
+    # Buffer contains time + desired velocity + current velocity
+    self.log_buffer = np.zeros(1+6+6)
+    self.log_buffer[0] = time.time() 
 
     self.map_keyboard()
 
@@ -115,15 +116,14 @@ class KeyboardTeleop:
     
     # Update buffer
     current_time =  time.time()
-    log_data = np.hstack([time.time(), 
-                          self.base_frame_desired_cartesian_velocity,
-                          base_frame_current_cartesian_velocity])
-    #data = asarray([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]])
-    # save to csv file
-    np.savetxt('data.csv', log_data, delimiter=',')
-    #self.log_file.write(log_data)
-
+    current_log_data = np.hstack([time.time(), 
+                                  self.base_frame_desired_cartesian_velocity,
+                                  base_frame_current_cartesian_velocity])
+    self.log_buffer = np.vstack([self.log_buffer,
+                                 current_log_data])
+    
 if __name__ == "__main__":
   rospy.init_node("baxter_velocity_teleop")
   keyboard_teleop = KeyboardTeleop()    
-  keyboard_teleop.log_file.close()
+  np.savetxt('data.csv', keyboard_teleop.log_buffer, delimiter=' ')
+    
