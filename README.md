@@ -3,9 +3,10 @@ This python package implements a velocity interface to control and estimate line
 
 # Instructions 
 To run the interface, use the following node:
-
+```sh
 rosrun baxter_velocity_interface velocity_to_position_node.py
-
+```
 To run the keyboard teleop (velocity commands in the base-frame):
-
+```sh
 rosrun baxter_velocity_interface keyboard_teleop.py
+```
