@@ -53,7 +53,7 @@ class VelocityInterface:
 
     # Estimator parameters
     self.is_filter_active = False
-    self.velocity_filter_gain = 0.8    # Low pass filter gain. Value between [0,1], higher implies more filtering/delay
+    self.velocity_filter_gain = 0.85    # Low pass filter gain. Value between [0,1], higher implies more filtering/delay
 
     # internal varialbes
     self.current_joint_velocity = np.zeros(self.nb_joints)
