@@ -16,7 +16,7 @@ from baxter_interface import CHECK_VERSION
 from baxter_pykdl import baxter_kinematics
 
 # @TODO read these parameters from rosparam server
-MAX_PROPORTIONAL_GAIN = .1
+MAX_PROPORTIONAL_GAIN = .01
 MIN_PROPORTIONAL_GAIN = .001
 INTEGRATOR_ANTI_WINDUP_VALUE = .01
 
@@ -28,10 +28,11 @@ class VelocityInterface:
     self._pub_rate = rospy.Publisher('robot/joint_state_publish_rate', UInt16, queue_size=10)
     self.odom_pub = rospy.Publisher('robot/odom', Odometry, queue_size=10)
     rospy.Subscriber("robot/cmd_vel", Twist, self.twist_callback)
-
     self._limb = baxter_interface.limb.Limb("right")
     self._joint_names = self._limb.joint_names()
     self.nb_joints = len(self._limb.joint_names())
+    print('-----------------')
+    print(self._joint_names)
 
     # control parameters
     self._control_rate = 500.0  # Hz (This has to be as fast as possible)
@@ -52,7 +53,7 @@ class VelocityInterface:
 
     # Estimator parameters
     self.is_filter_active = False
-    self.velocity_filter_gain = 0.05    # Low pass filter gain. Value between [0,1], higher implies more filtering/delay
+    self.velocity_filter_gain = 0.8    # Low pass filter gain. Value between [0,1], higher implies more filtering/delay
 
     # internal varialbes
     self.current_joint_velocity = np.zeros(self.nb_joints)
@@ -62,9 +63,13 @@ class VelocityInterface:
 
     # Set velocity controller/estimation on
     print("Ready to control in velocity... ")
+    self.error = -1
     self.control_timer = rospy.Timer(rospy.Duration(1./self._control_rate), self.control_callback)
     self.filter_timer = rospy.Timer(rospy.Duration(1./self._filter_rate), self.filter_callback)    
     self.velocity_timer = rospy.Timer(rospy.Duration(1./self._velocity_rate), self.velocity_callback)    
+
+    while(abs(self.error) > .05):
+      self.desired_joint_velocity[0] = self.error
 
   def twist_callback(self, data):
     """
@@ -95,10 +100,10 @@ class VelocityInterface:
     Estimates joint velocities and updates control parameters.
     """  
     joint_position = np.array([self._limb.joint_angle(joint_name) for joint_name in self._joint_names])
+    
     if self.is_filter_active is True:   
       dt = (1./self._filter_rate)
-      self.current_joint_velocity = (self.velocity_filter_gain) * self.current_joint_velocity + \
-            (1-self.velocity_filter_gain)*(joint_position - self.previous_joint_position)/dt
+      self.current_joint_velocity = (self.velocity_filter_gain) * self.current_joint_velocity + (1-self.velocity_filter_gain)*(joint_position - self.previous_joint_position)/dt
       for i in range(self.nb_joints):
         error = self.desired_joint_velocity[i] - self.current_joint_velocity[i]
         if self.desired_joint_velocity[i] - self.current_joint_velocity[i] > 0:  
