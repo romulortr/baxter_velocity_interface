@@ -18,7 +18,7 @@ class KeyboardTeleop:
   def __init__(self):
     self.kin = baxter_kinematics('right') 
     rate = 20 # hz 
-    self.base_frame_desired_cartesian_velocity = np.zeros(6)
+    self._link_frame_desired_cartesian_velocity = np.zeros(6)
  
     self.twist_pub = rospy.Publisher('robot/cmd_vel', Twist, queue_size=10)
     rospy.Subscriber('robot/odom', Odometry, self.odom_callback)
@@ -35,30 +35,26 @@ class KeyboardTeleop:
     #Tv = 10
     #Tw = 10
     #t = time.time() - self.time0
-    #self.base_frame_desired_cartesian_velocity[0] = -.1*np.sin(2*np.pi*t/Tv)
-    #self.base_frame_desired_cartesian_velocity[1] = -.1*np.cos(2*np.pi*t/Tv)
-    #self.base_frame_desired_cartesian_velocity[2] = .1*np.cos(2*np.pi*t/Tv)
-    #self.base_frame_desired_cartesian_velocity[3] = .05*np.sin(2*np.pi*t/Tw)
-    #self.base_frame_desired_cartesian_velocity[4] = .05*np.sin(2*np.pi*t/Tw)
-    #self.base_frame_desired_cartesian_velocity[4] = .05*np.sin(2*np.pi*t/Tw)
-    pose = self.kin.forward_position_kinematics()
-    link_frame_desired_cartesian_velocity = self.transform_velocity(
-                                               pose, 
-                                               self.base_frame_desired_cartesian_velocity, 
-                                               inv=True)
+    #self._link_frame_desired_cartesian_velocity[0] = -.1*np.sin(2*np.pi*t/Tv)
+    #self._link_frame_desired_cartesian_velocity[1] = -.1*np.cos(2*np.pi*t/Tv)
+    #self._link_frame_desired_cartesian_velocity[2] = -.1*np.cos(2*np.pi*t/Tv)
+    #self._link_frame_desired_cartesian_velocity[3] = .05*np.sin(2*np.pi*t/Tw)
+    #self._link_frame_desired_cartesian_velocity[4] = .05*np.sin(2*np.pi*t/Tw)
+    #self._link_frame_desired_cartesian_velocity[4] = .05*np.sin(2*np.pi*t/Tw)
+
     # Write message and send it
     twist = Twist()
-    twist.linear.x = link_frame_desired_cartesian_velocity[0]
-    twist.linear.y = link_frame_desired_cartesian_velocity[1]
-    twist.linear.z = link_frame_desired_cartesian_velocity[2]
-    twist.angular.x = link_frame_desired_cartesian_velocity[3]
-    twist.angular.y = link_frame_desired_cartesian_velocity[4]
-    twist.angular.z = link_frame_desired_cartesian_velocity[5]
+    twist.linear.x = self._link_frame_desired_cartesian_velocity[0]
+    twist.linear.y = self._link_frame_desired_cartesian_velocity[1]
+    twist.linear.z = self._link_frame_desired_cartesian_velocity[2]
+    twist.angular.x =self._link_frame_desired_cartesian_velocity[3]
+    twist.angular.y =self._link_frame_desired_cartesian_velocity[4]
+    twist.angular.z =self._link_frame_desired_cartesian_velocity[5]
 
     self.twist_pub.publish(twist)
 
   def update_desired_velocity(self, field, value):
-    self.base_frame_desired_cartesian_velocity[field] = value
+    self._link_frame_desired_cartesian_velocity[field] = value
 
   def map_keyboard(self):
     lin_vel = .05
@@ -115,30 +111,13 @@ class KeyboardTeleop:
                                                     data.twist.twist.angular.y,
                                                     data.twist.twist.angular.z])
 
-    # Transform from link to base frame
-    pose = self.kin.forward_position_kinematics()
-    base_frame_current_cartesian_velocity = self.transform_velocity(
-                                               pose, 
-                                               link_frame_current_cartesian_velocity, 
-                                               inv=False)
     # Update buffer
     current_time =  time.time()
     current_log_data = np.hstack([time.time(), 
-                                  self.base_frame_desired_cartesian_velocity,
-                                  base_frame_current_cartesian_velocity])
+                                  self._link_frame_desired_cartesian_velocity,
+                                  link_frame_current_cartesian_velocity])
     self.log_buffer = np.vstack([self.log_buffer,
                                  current_log_data])
-
-  def transform_velocity(self, pose, velocity, inv=False):
-    trans = pose[0:3]
-    quat = pose[3:]
-
-    rotation = scipy.from_quat(quat)
-    vel_ang = rotation.apply(velocity[3:], inverse=inv) 
-    if inv:
-      trans = -rotation.apply(trans, inverse=True)
-    vel_lin = rotation.apply(velocity[0:3], inverse=inv) + np.cross(trans, vel_ang) 
-    return np.hstack([vel_lin, vel_ang])
 
 if __name__ == "__main__":
   rospy.init_node("baxter_velocity_teleop")
