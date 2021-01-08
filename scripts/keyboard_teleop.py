@@ -32,13 +32,14 @@ class KeyboardTeleop:
 
   def twist_publisher(self, event):
     # Transform from base to link frame
-    #Tv = 15
-    #Tw = 8
+    #Tv = 10
+    #Tw = 10
     #t = time.time() - self.time0
-    #self.base_frame_desired_cartesian_velocity[0] = -.05*np.sin(2*np.pi*t/Tv)
-    #self.base_frame_desired_cartesian_velocity[1] = .02*np.cos(2*np.pi*t/Tv)
-    #self.base_frame_desired_cartesian_velocity[2] = .02*np.cos(2*np.pi*t/Tv)
+    #self.base_frame_desired_cartesian_velocity[0] = -.1*np.sin(2*np.pi*t/Tv)
+    #self.base_frame_desired_cartesian_velocity[1] = -.1*np.cos(2*np.pi*t/Tv)
+    #self.base_frame_desired_cartesian_velocity[2] = .1*np.cos(2*np.pi*t/Tv)
     #self.base_frame_desired_cartesian_velocity[3] = .05*np.sin(2*np.pi*t/Tw)
+    #self.base_frame_desired_cartesian_velocity[4] = .05*np.sin(2*np.pi*t/Tw)
     #self.base_frame_desired_cartesian_velocity[4] = .05*np.sin(2*np.pi*t/Tw)
     pose = self.kin.forward_position_kinematics()
     link_frame_desired_cartesian_velocity = self.transform_velocity(
