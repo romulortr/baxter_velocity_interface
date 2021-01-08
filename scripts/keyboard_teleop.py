@@ -5,7 +5,7 @@ from scipy.spatial.transform import Rotation as scipy
 
 import rospy
 
-import baxter_interface
+#import baxter_interface
 from baxter_interface import CHECK_VERSION
 from baxter_pykdl import baxter_kinematics
 import baxter_external_devices
@@ -27,17 +27,24 @@ class KeyboardTeleop:
     # Buffer contains time + desired velocity + current velocity
     self.log_buffer = np.zeros(1+6+6)
     self.log_buffer[0] = time.time() 
-
+    self.time0 = time.time()
     self.map_keyboard()
 
   def twist_publisher(self, event):
     # Transform from base to link frame
-    quat = self.kin.forward_position_kinematics()[3:]
-    rotation = scipy.from_quat(quat)
-    link_frame_desired_cartesian_velocity = np.hstack([
-      rotation.apply(self.base_frame_desired_cartesian_velocity[0:3], inverse=True),
-      rotation.apply(self.base_frame_desired_cartesian_velocity[3:], inverse=True)])   
-
+    #Tv = 15
+    #Tw = 8
+    #t = time.time() - self.time0
+    #self.base_frame_desired_cartesian_velocity[0] = -.05*np.sin(2*np.pi*t/Tv)
+    #self.base_frame_desired_cartesian_velocity[1] = .02*np.cos(2*np.pi*t/Tv)
+    #self.base_frame_desired_cartesian_velocity[2] = .02*np.cos(2*np.pi*t/Tv)
+    #self.base_frame_desired_cartesian_velocity[3] = .05*np.sin(2*np.pi*t/Tw)
+    #self.base_frame_desired_cartesian_velocity[4] = .05*np.sin(2*np.pi*t/Tw)
+    pose = self.kin.forward_position_kinematics()
+    link_frame_desired_cartesian_velocity = self.transform_velocity(
+                                               pose, 
+                                               self.base_frame_desired_cartesian_velocity, 
+                                               inv=True)
     # Write message and send it
     twist = Twist()
     twist.linear.x = link_frame_desired_cartesian_velocity[0]
@@ -53,7 +60,7 @@ class KeyboardTeleop:
     self.base_frame_desired_cartesian_velocity[field] = value
 
   def map_keyboard(self):
-    lin_vel = .02
+    lin_vel = .05
     ang_vel = .05
     bindings = {
     #   key: (function, args, description)
@@ -108,12 +115,11 @@ class KeyboardTeleop:
                                                     data.twist.twist.angular.z])
 
     # Transform from link to base frame
-    quat = self.kin.forward_position_kinematics()[3:]
-    rotation = scipy.from_quat(quat)
-    base_frame_current_cartesian_velocity = np.hstack([
-      rotation.apply(link_frame_current_cartesian_velocity[0:3], inverse=False),
-      rotation.apply(link_frame_current_cartesian_velocity[3:], inverse=False)])   
-    
+    pose = self.kin.forward_position_kinematics()
+    base_frame_current_cartesian_velocity = self.transform_velocity(
+                                               pose, 
+                                               link_frame_current_cartesian_velocity, 
+                                               inv=False)
     # Update buffer
     current_time =  time.time()
     current_log_data = np.hstack([time.time(), 
@@ -121,7 +127,18 @@ class KeyboardTeleop:
                                   base_frame_current_cartesian_velocity])
     self.log_buffer = np.vstack([self.log_buffer,
                                  current_log_data])
-    
+
+  def transform_velocity(self, pose, velocity, inv=False):
+    trans = pose[0:3]
+    quat = pose[3:]
+
+    rotation = scipy.from_quat(quat)
+    vel_ang = rotation.apply(velocity[3:], inverse=inv) 
+    if inv:
+      trans = -rotation.apply(trans, inverse=True)
+    vel_lin = rotation.apply(velocity[0:3], inverse=inv) + np.cross(trans, vel_ang) 
+    return np.hstack([vel_lin, vel_ang])
+
 if __name__ == "__main__":
   rospy.init_node("baxter_velocity_teleop")
   keyboard_teleop = KeyboardTeleop()    
