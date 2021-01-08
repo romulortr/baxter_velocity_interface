@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>baxter_velocity_control</name>
+  <name>baxter_velocity_interface</name>
   <version>0.0.0</version>
-  <description>The baxter_velocity_control package</description>
+  <description>The baxter_velocity_interface package</description>
   <maintainer email="romulortr@fe.up.pt">romulo</maintainer>
 
 
