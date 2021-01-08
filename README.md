@@ -1,9 +1,9 @@
 This python package implements a velocity interface to control and estimate linear/angular velocity of baxter' cameras.
-# Requirements
+## Requirements
 1. Baxter SDK (https://sdk.rethinkrobotics.com/wiki/Workstation_Setup)
 2. Baxter PyKDL (https://github.com/RethinkRobotics/baxter_pykdl)
 
-# Instructions 
+## Instructions 
 To run the interface using baxter_gazebo:
 ```sh
 rosrun baxter_velocity_interface gazebo.py
