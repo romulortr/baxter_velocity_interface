@@ -31,29 +31,14 @@ class KeyboardTeleop:
     self.map_keyboard()
 
   def twist_publisher(self, event):
-    # Transform from base to link frame
-    #Tv = 10
-    #Tw = 10
-    #t = time.time() - self.time0
-    #self.base_frame_desired_cartesian_velocity[0] = -.1*np.sin(2*np.pi*t/Tv)
-    #self.base_frame_desired_cartesian_velocity[1] = -.1*np.cos(2*np.pi*t/Tv)
-    #self.base_frame_desired_cartesian_velocity[2] = .1*np.cos(2*np.pi*t/Tv)
-    #self.base_frame_desired_cartesian_velocity[3] = .05*np.sin(2*np.pi*t/Tw)
-    #self.base_frame_desired_cartesian_velocity[4] = .05*np.sin(2*np.pi*t/Tw)
-    #self.base_frame_desired_cartesian_velocity[4] = .05*np.sin(2*np.pi*t/Tw)
-    pose = self.kin.forward_position_kinematics()
-    link_frame_desired_cartesian_velocity = self.transform_velocity(
-                                               pose, 
-                                               self.base_frame_desired_cartesian_velocity, 
-                                               inv=True)
     # Write message and send it
     twist = Twist()
-    twist.linear.x = link_frame_desired_cartesian_velocity[0]
-    twist.linear.y = link_frame_desired_cartesian_velocity[1]
-    twist.linear.z = link_frame_desired_cartesian_velocity[2]
-    twist.angular.x = link_frame_desired_cartesian_velocity[3]
-    twist.angular.y = link_frame_desired_cartesian_velocity[4]
-    twist.angular.z = link_frame_desired_cartesian_velocity[5]
+    twist.linear.x = self.base_frame_desired_cartesian_velocity[0]
+    twist.linear.y = self.base_frame_desired_cartesian_velocity[1]
+    twist.linear.z = self.base_frame_desired_cartesian_velocity[2]
+    twist.angular.x = self.base_frame_desired_cartesian_velocity[3]
+    twist.angular.y = self.base_frame_desired_cartesian_velocity[4]
+    twist.angular.z = self.base_frame_desired_cartesian_velocity[5]
 
     self.twist_pub.publish(twist)
 
@@ -61,7 +46,7 @@ class KeyboardTeleop:
     self.base_frame_desired_cartesian_velocity[field] = value
 
   def map_keyboard(self):
-    lin_vel = .05
+    lin_vel = .1
     ang_vel = .05
     bindings = {
     #   key: (function, args, description)

@@ -37,7 +37,7 @@ class VelocityInterface:
     # internal varialbes
     self._current_joint_velocity = np.zeros(self._nb_joints)
     self._desired_joint_velocity = np.zeros(self._nb_joints)
-    self._camera_desired_cartesian_velocity = np.zeros(6)
+    self._base_frame_desired_cartesian_velocity = np.zeros(6)
 
     # Publishers and subscribers
     self._pub_rate = rospy.Publisher('robot/joint_state_publish_rate', UInt16, queue_size=10)
@@ -61,7 +61,7 @@ class VelocityInterface:
     """
     Stores the desired cartesian velocity (link frame)
     """
-    self._camera_desired_cartesian_velocity = np.array([data.linear.x,
+    self._base_frame_desired_cartesian_velocity = np.array([data.linear.x,
                                                      data.linear.y,
                                                      data.linear.z,
                                                      data.angular.x,
@@ -100,16 +100,15 @@ class VelocityInterface:
     """
     Transforms the desired cartesian velocity (link frame) to desired joint velocity 
     and computes an estimate for the current cartesian velocity (link frame).
-    """
-    ## Computing joint velocity
+    """   
+    ## Computing desired joint velocity
+    pose = self.kin.forward_position_kinematics()
     jacobian = np.asarray(self.kin.jacobian())
     jacobian_inverse = np.linalg.pinv(jacobian)
-    self._desired_joint_velocity = np.matmul(jacobian_inverse, self._camera_desired_cartesian_velocity)
+    self._desired_joint_velocity = np.matmul(jacobian_inverse,  self._base_frame_desired_cartesian_velocity)
  
     ## Publish camera velocity
     # Coompute current velocity in camera coordinate sytem
-    pose = self.kin.forward_position_kinematics()
-    jacobian = np.asarray(self.kin.jacobian())
     base_frame_current_cartesian_velocity = np.matmul(jacobian, self._current_joint_velocity)
     camera_frame_current_cartesian_velocity = self.transform_velocity(
                                     pose,

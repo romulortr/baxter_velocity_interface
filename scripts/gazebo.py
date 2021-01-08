@@ -47,7 +47,7 @@ class VelocityInterface:
     self._current_joint_velocity = np.zeros(self._nb_joints)
     self._desired_joint_velocity = np.zeros(self._nb_joints)
     self._raw_joint_position = np.zeros(self._nb_joints)
-    self._camera_desired_cartesian_velocity = np.zeros(6)
+    self._base_frame_desired_cartesian_velocity = np.zeros(6)
     self._prev_timestamp = 0
 
     # Publishers and subscribers
@@ -72,7 +72,7 @@ class VelocityInterface:
     """
     Stores the desired cartesian velocity (link frame)
     """
-    self._camera_desired_cartesian_velocity = np.array([data.linear.x,
+    self._base_frame_desired_cartesian_velocity = np.array([data.linear.x,
                                                      data.linear.y,
                                                      data.linear.z,
                                                      data.angular.x,
@@ -137,13 +137,9 @@ class VelocityInterface:
     ## Control loop
     # Transforming desired cartesian velocity to joint space 
     pose = self.kin.forward_position_kinematics()
-    base_frame_desired_velocity = self.transform_velocity(
-                                    pose,
-                                    self._camera_desired_cartesian_velocity, 
-                                    inv=False)
     jacobian = np.asarray(self.kin.jacobian())
     inverse_jacobian = np.linalg.pinv(jacobian)
-    self._desired_joint_velocity = np.matmul(inverse_jacobian, base_frame_desired_velocity)
+    self._desired_joint_velocity = np.matmul(inverse_jacobian, self._base_frame_desired_velocity)
     ## Estimation loop
     # Coompute current velocity in camera coordinate sytem
     base_frame_current_cartesian_velocity = np.matmul(jacobian, self._current_joint_velocity)
