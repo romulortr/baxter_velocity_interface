@@ -139,7 +139,7 @@ class VelocityInterface:
     pose = self.kin.forward_position_kinematics()
     jacobian = np.asarray(self.kin.jacobian())
     inverse_jacobian = np.linalg.pinv(jacobian)
-    self._desired_joint_velocity = np.matmul(inverse_jacobian, self._base_frame_desired_velocity)
+    self._desired_joint_velocity = np.matmul(inverse_jacobian, self._base_frame_desired_cartesian_velocity )
     ## Estimation loop
     # Coompute current velocity in camera coordinate sytem
     base_frame_current_cartesian_velocity = np.matmul(jacobian, self._current_joint_velocity)
