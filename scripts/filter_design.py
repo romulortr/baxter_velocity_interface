@@ -57,14 +57,14 @@ if __name__ == '__main__':
 
     # Filters
     # BAXTER
-    #avg_20_filter = joint_filter.FIRFilter(filter='mean', nb_samples=40)
-    #iir_lin_filter = joint_filter.IIRLinearFilter(order=7, wn=.02)
-    #iir_quad_filter = joint_filter.IIRQuadraticFitler(order=4, wn=2)  
+    avg_20_filter = joint_filter.FIRFilter(filter='mean', nb_samples=40)
+    iir_lin_filter = joint_filter.IIRLinearFilter(order=7, wn=.02)
+    iir_quad_filter = joint_filter.IIRQuadraticFitler(order=4, wn=2)  
 
     # Gazebo
-    avg_20_filter = joint_filter.FIRFilter(filter='mean', nb_samples=20)
-    iir_lin_filter = joint_filter.IIRLinearFilter(order=3, wn=1.5, fs=50)
-    iir_quad_filter = joint_filter.IIRQuadraticFitler(order=3, wn=1.5, fs=50)  
+    #avg_20_filter = joint_filter.FIRFilter(filter='mean', nb_samples=20)
+    #iir_lin_filter = joint_filter.IIRLinearFilter(order=3, wn=1.5, fs=50)
+    #iir_quad_filter = joint_filter.IIRQuadraticFitler(order=3, wn=1.5, fs=50)  
 
     # Bagfile
     print('Reading bag file')
