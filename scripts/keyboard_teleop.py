@@ -112,7 +112,6 @@ class KeyboardTeleop:
                                                     data.twist.twist.angular.z])
 
     # Update buffer
-    current_time =  time.time()
     current_log_data = np.hstack([time.time(), 
                                   self._link_frame_desired_cartesian_velocity,
                                   link_frame_current_cartesian_velocity])
