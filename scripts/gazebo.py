@@ -73,11 +73,11 @@ class VelocityInterface:
     Stores the desired cartesian velocity (link frame)
     """
     self._camera_desired_cartesian_velocity = np.array([data.linear.x,
-                                                     data.linear.y,
-                                                     data.linear.z,
-                                                     data.angular.x,
-                                                     data.angular.y,
-                                                     data.angular.z])
+                                                        data.linear.y,
+                                                        data.linear.z,
+                                                        data.angular.x,
+                                                        data.angular.y,
+                                                        data.angular.z])
  
                                   
   def control_callback(self, event):

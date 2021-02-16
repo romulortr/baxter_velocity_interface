@@ -27,7 +27,7 @@ def read_bagfile(filename):
 
     counter = 0
     for i in range(0, len(joint_states)):
-        if counter > 5000:
+        if counter > 1000:
             pass #break
         counter += 1
         # Syncronizing
@@ -56,15 +56,10 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     # Filters
-    # BAXTER
-    avg_20_filter = joint_filter.FIRFilter(filter='mean', nb_samples=40)
-    iir_lin_filter = joint_filter.IIRLinearFilter(order=7, wn=.02)
-    iir_quad_filter = joint_filter.IIRQuadraticFitler(order=4, wn=2)  
-
     # Gazebo
-    #avg_20_filter = joint_filter.FIRFilter(filter='mean', nb_samples=20)
-    #iir_lin_filter = joint_filter.IIRLinearFilter(order=3, wn=1.5, fs=50)
-    #iir_quad_filter = joint_filter.IIRQuadraticFitler(order=3, wn=1.5, fs=50)  
+    avg_20_filter = joint_filter.FIRFilter(filter='mean', nb_samples=20)
+    iir_lin_filter = joint_filter.IIRLinearFilter(order=3, wn=1.5, fs=50)
+    iir_quad_filter = joint_filter.IIRQuadraticFitler(order=3, wn=1.5, fs=50)  
 
     # Bagfile
     print('Reading bag file')
@@ -88,7 +83,7 @@ if __name__ == '__main__':
         state_lin_filter[i,:] = iir_lin_filter.filter(velocity[i,:])
         total_time[1] += time.time() - tic
         tic = time.time()
-        state_quad_filter[i,:] = iir_quad_filter.filter(velocity[i,:])
+        state_quad_filter[i,:] = iir_quad_filter.filter(state_avg_20_filter[i,:])
         total_time[2] += time.time() - tic 
     print('avg time: ', total_time/nb_measurements)
     
@@ -112,13 +107,13 @@ if __name__ == '__main__':
     ax[1,0].plot(timestamp-timestamp[0], state_lin_filter[:,3], '-r')
     ax[1,1].plot(timestamp-timestamp[0], state_lin_filter[:,4], '-r')
     ax[1,2].plot(timestamp-timestamp[0], state_lin_filter[:,5], '-r')
-    ax[0,0].plot(timestamp-timestamp[0], state_quad_filter[:,0], '-g', label='IIR quadratic')
-    ax[0,1].plot(timestamp-timestamp[0], state_quad_filter[:,1], '-g')
-    ax[0,2].plot(timestamp-timestamp[0], state_quad_filter[:,2], '-g')
-    ax[1,0].plot(timestamp-timestamp[0], state_quad_filter[:,3], '-g')
-    ax[1,1].plot(timestamp-timestamp[0], state_quad_filter[:,4], '-g')
-    ax[1,2].plot(timestamp-timestamp[0], state_quad_filter[:,5], '-g')
-
+    #ax[0,0].plot(timestamp-timestamp[0], state_quad_filter[:,0], '-g', label='IIR quadratic')
+    #ax[0,1].plot(timestamp-timestamp[0], state_quad_filter[:,1], '-g')
+    #ax[0,2].plot(timestamp-timestamp[0], state_quad_filter[:,2], '-g')
+    #ax[1,0].plot(timestamp-timestamp[0], state_quad_filter[:,3], '-g')
+    #ax[1,1].plot(timestamp-timestamp[0], state_quad_filter[:,4], '-g')
+    #ax[1,2].plot(timestamp-timestamp[0], state_quad_filter[:,5], '-g')
+    #print( 1./((timestamp[-1]-timestamp[0])/nb_measurements) ) 
     ax[0,0].legend()
 
     plt.show()

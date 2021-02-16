@@ -32,8 +32,10 @@ class VelocityInterface:
 
     # control parameters
     self._control_rate = 500.0  # Hz (This has to be as fast as possible)
+    self._estimation_rate = 100.0
+
     # Estimator parameters
-    self._velocity_filter = joint_filter.IIRQuadraticFitler(order=3, wn=2)  
+    self._velocity_filter = joint_filter.FIRFilter(filter='mean', nb_samples=5)  
     # internal varialbes
     self._current_joint_velocity = np.zeros(self._nb_joints)
     self._desired_joint_velocity = np.zeros(self._nb_joints)
@@ -55,7 +57,8 @@ class VelocityInterface:
     self.set_neutral()
 
     print("Ready to control in velocity... ")
-    self.control_timer = rospy.Timer(rospy.Duration(1./self._control_rate), self.control_callback)
+    self._control_timer = rospy.Timer(rospy.Duration(1./self._control_rate), self.control_callback)
+    self._estimation_timer = rospy.Timer(rospy.Duration(1./self._estimation_rate), self.estimation_callback)
 
   def twist_callback(self, data):
     """
@@ -81,22 +84,17 @@ class VelocityInterface:
     """
     Estimates joint velocities and updates control parameters.
     """  
-    joint_velocity = dict(zip(data.name, data.velocity))
-    raw_joint_velocity = np.zeros(self._nb_joints)
-    joints_successfully_read = 0
-    for i, joint_name in enumerate(self._joints_name):
-      if joint_name in data.name:
-        raw_joint_velocity[i] = joint_velocity[joint_name]
-        joints_successfully_read += 1
+    if len(data.name) > 10:
+      joint_velocity = dict(zip(data.name, data.velocity))
+      raw_joint_velocity = np.zeros(self._nb_joints)
+      for i, joint_name in enumerate(self._joints_name):
+        if joint_name in data.name:
+          raw_joint_velocity[i] = joint_velocity[joint_name]
 
-    if joints_successfully_read == self._nb_joints:
-      # Estimation 
       self._current_joint_velocity = self._velocity_filter.filter(raw_joint_velocity)
+ 
 
-      # Control feedback
-      self.velocity_callback()      
-
-  def velocity_callback(self):
+  def velocity_callback(self, event):
     """
     Transforms the desired cartesian velocity (link frame) to desired joint velocity 
     and computes an estimate for the current cartesian velocity (link frame).
@@ -129,14 +127,14 @@ class VelocityInterface:
     self._odom_pub.publish(odom_msg)   
 
   def transform_velocity(self, pose, velocity, inv=False):
-    trans = pose[0:3]
+    trans = pose[0:3] # np.array([0.038, 0.012, -0.142])
     quat = pose[3:]
 
     rotation = scipy.from_quat(quat)
     vel_ang = rotation.apply(velocity[3:], inverse=inv) 
     if inv:
       trans = -rotation.apply(trans, inverse=True)
-    vel_lin = rotation.apply(velocity[0:3], inverse=inv) + np.cross(trans, vel_ang) 
+    vel_lin = rotation.apply(velocity[0:3], inverse=inv) #+ np.cross(trans, vel_ang) 
     return np.hstack([vel_lin, vel_ang])
 
   def set_neutral(self):
@@ -159,7 +157,8 @@ class VelocityInterface:
   def clean_shutdown(self):
     print("\nExiting velocity interface...")
     # Shutdown timer callback
-    self.control_timer.shutdown()
+    self._control_timer.shutdown()
+    self._estimation_timer.shutdown()
 
     #return to normal
     self._reset_control_modes()
