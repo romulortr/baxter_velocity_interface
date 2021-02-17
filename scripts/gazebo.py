@@ -113,8 +113,7 @@ class VelocityInterface:
       self._prev_timestamp = timestamp
       
       if (self._has_link_velocity is False):
-        #desired_joint_position = np.array([-np.pi/4,-0.2, 0., np.pi/4, 0., 1.28, 0])
-        desired_joint_position = np.array([-.68, .5, .0, 1, 0, 0, 0])
+        desired_joint_position = np.array([-.68, -.3, .15, 1.75, 0, 0, 0])
         self._desired_joint_velocity = desired_joint_position - raw_joint_position
         self._desired_joint_velocity = np.minimum(np.maximum(self._desired_joint_velocity, -.05), .05)
       

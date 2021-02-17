@@ -35,9 +35,9 @@ class KeyboardTeleop:
     #Tv = 10
     #Tw = 10
     #t = time.time() - self.time0
-    #self._link_frame_desired_cartesian_velocity[0] = -.1*np.sin(2*np.pi*t/Tv)
-    #self._link_frame_desired_cartesian_velocity[1] = -.1*np.cos(2*np.pi*t/Tv)
-    #self._link_frame_desired_cartesian_velocity[2] = -.1*np.cos(2*np.pi*t/Tv)
+    #self._link_frame_desired_cartesian_velocity[0] = -.05*np.sin(2*np.pi*t/Tv)
+    #self._link_frame_desired_cartesian_velocity[1] = -.05*np.cos(2*np.pi*t/Tv)
+    #self._link_frame_desired_cartesian_velocity[2] = -.05*np.cos(2*np.pi*t/Tv)
     #self._link_frame_desired_cartesian_velocity[3] = .05*np.sin(2*np.pi*t/Tw)
     #self._link_frame_desired_cartesian_velocity[4] = .05*np.sin(2*np.pi*t/Tw)
     #self._link_frame_desired_cartesian_velocity[4] = .05*np.sin(2*np.pi*t/Tw)
