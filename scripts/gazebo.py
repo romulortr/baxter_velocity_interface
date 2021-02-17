@@ -67,7 +67,7 @@ class VelocityInterface:
     self.control_timer = rospy.Timer(rospy.Duration(1./self._control_rate), self.control_callback)
     rospy.Subscriber('/robot/joint_states', JointState, self.joint_callback)
     rospy.Subscriber("robot/cmd_vel", Twist, self.twist_callback)
-    
+
   def twist_callback(self, data):
     """
     Stores the desired cartesian velocity (link frame)
@@ -97,6 +97,7 @@ class VelocityInterface:
     joint_position = dict(zip(data.name, data.position))
     raw_joint_position = np.zeros(self._nb_joints)
     joints_successfully_read = 0
+
     for i, joint_name in enumerate(self._joints_name):
       if joint_name in data.name:
         raw_joint_position[i] = joint_position[joint_name]
@@ -111,6 +112,9 @@ class VelocityInterface:
       self._raw_joint_position = raw_joint_position
       self._prev_timestamp = timestamp
       
+      desired_joint_position = np.array([0.,0.,0.,np.pi/4, 0, np.pi/2, 0])
+      self._desired_joint_velocity = desired_joint_position - raw_joint_position
+      self._desired_joint_velocity = np.minimum(np.maximum(self._desired_joint_velocity, -.1), .1)
       for i in range(self._nb_joints):
         error = self._desired_joint_velocity[i] - raw_joint_velocity[i]
         if error*self._desired_joint_velocity[i]  > 0:  
