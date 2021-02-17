@@ -47,14 +47,12 @@ class VelocityInterface:
     self._current_joint_velocity = np.zeros(self._nb_joints)
     self._desired_joint_velocity = np.zeros(self._nb_joints)
     self._raw_joint_position = np.zeros(self._nb_joints)
-    self._camera_desired_cartesian_velocity = np.zeros(6)
+    self._link_desired_cartesian_velocity = np.zeros(6)
     self._prev_timestamp = 0
 
     # Publishers and subscribers
     self._pub_rate = rospy.Publisher('robot/joint_state_publish_rate', UInt16, queue_size=10)
     self._odom_pub = rospy.Publisher('robot/odom', Odometry, queue_size=10)
-    rospy.Subscriber('/robot/joint_states', JointState, self.joint_callback)
-    rospy.Subscriber("robot/cmd_vel", Twist, self.twist_callback)
 
     # Enabling robot
     print("Getting robot state... ")
@@ -67,12 +65,14 @@ class VelocityInterface:
 
     print("Ready to control in velocity... ")
     self.control_timer = rospy.Timer(rospy.Duration(1./self._control_rate), self.control_callback)
-
+    rospy.Subscriber('/robot/joint_states', JointState, self.joint_callback)
+    rospy.Subscriber("robot/cmd_vel", Twist, self.twist_callback)
+    
   def twist_callback(self, data):
     """
     Stores the desired cartesian velocity (link frame)
     """
-    self._camera_desired_cartesian_velocity = np.array([data.linear.x,
+    self._link_desired_cartesian_velocity = np.array([data.linear.x,
                                                         data.linear.y,
                                                         data.linear.z,
                                                         data.angular.x,
@@ -84,11 +84,10 @@ class VelocityInterface:
     """
     Computes and sends virtual waypoint in joint space
     """
-    joint_position = self._raw_joint_position
     # Compute virtual waypoint to follow  desired joint velocity
-    delta = (self._desired_joint_velocity ) * self._proportional_gain + self._integrator
+    delta = (self._desired_joint_velocity) * self._proportional_gain + self._integrator
     # Send commands to robot using interface
-    joint_command = {joint_name: joint_position[i] + delta[i] for i, joint_name in enumerate(self._joints_name) }
+    joint_command = {joint_name: self._raw_joint_position[i] + delta[i] for i, joint_name in enumerate(self._joints_name) }
     self._limb.set_joint_positions(joint_command)
     
   def joint_callback(self, data):     
@@ -111,8 +110,6 @@ class VelocityInterface:
       self._current_joint_velocity = self._velocity_filter.filter(raw_joint_velocity)
       self._raw_joint_position = raw_joint_position
       self._prev_timestamp = timestamp
-
-      #raw_joint_velocity = self._current_joint_velocity
       
       for i in range(self._nb_joints):
         error = self._desired_joint_velocity[i] - raw_joint_velocity[i]
@@ -139,7 +136,7 @@ class VelocityInterface:
     pose = self.kin.forward_position_kinematics()
     base_frame_desired_velocity = self.transform_velocity(
                                     pose,
-                                    self._camera_desired_cartesian_velocity, 
+                                    self._link_desired_cartesian_velocity, 
                                     inv=False)
     jacobian = np.asarray(self.kin.jacobian())
     inverse_jacobian = np.linalg.pinv(jacobian)
