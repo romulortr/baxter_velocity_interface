@@ -17,7 +17,7 @@ import filter
 
 # @TODO read these parameters from rosparam server
 
-MAX_PROPORTIONAL_GAIN = .01
+MAX_PROPORTIONAL_GAIN = .001
 MIN_PROPORTIONAL_GAIN = .001
 INTEGRATOR_ANTI_WINDUP_VALUE = .01
 
@@ -49,7 +49,7 @@ class VelocityInterface:
     self._raw_joint_position = np.zeros(self._nb_joints)
     self._link_desired_cartesian_velocity = np.zeros(6)
     self._prev_timestamp = 0
-
+    self._has_link_velocity = False
     # Publishers and subscribers
     self._pub_rate = rospy.Publisher('robot/joint_state_publish_rate', UInt16, queue_size=10)
     self._odom_pub = rospy.Publisher('robot/odom', Odometry, queue_size=10)
@@ -78,7 +78,7 @@ class VelocityInterface:
                                                         data.angular.x,
                                                         data.angular.y,
                                                         data.angular.z])
- 
+    self._has_link_velocity = True
                                   
   def control_callback(self, event):
     """
@@ -112,16 +112,19 @@ class VelocityInterface:
       self._raw_joint_position = raw_joint_position
       self._prev_timestamp = timestamp
       
-      desired_joint_position = np.array([0.,0.,0.,np.pi/4, 0, np.pi/2, 0])
-      self._desired_joint_velocity = desired_joint_position - raw_joint_position
-      self._desired_joint_velocity = np.minimum(np.maximum(self._desired_joint_velocity, -.1), .1)
+      if (self._has_link_velocity is False):
+        #desired_joint_position = np.array([-np.pi/4,-0.2, 0., np.pi/4, 0., 1.28, 0])
+        desired_joint_position = np.array([-.68, .5, .0, 1, 0, 0, 0])
+        self._desired_joint_velocity = desired_joint_position - raw_joint_position
+        self._desired_joint_velocity = np.minimum(np.maximum(self._desired_joint_velocity, -.05), .05)
+      
       for i in range(self._nb_joints):
         error = self._desired_joint_velocity[i] - raw_joint_velocity[i]
         if error*self._desired_joint_velocity[i]  > 0:  
-          self._proportional_gain[i] *= .9
+          self._proportional_gain[i] *= .95
         elif error*self._desired_joint_velocity[i]  < 0:
-          self._proportional_gain[i] *= 1.05
-        self._integrator[i] +=  2*self._proportional_gain[i]*error
+          self._proportional_gain[i] *= 1.1
+        self._integrator[i] +=  .01*error #*self._proportional_gain[i]*error
       self._proportional_gain = np.minimum(np.maximum(self._proportional_gain, MIN_PROPORTIONAL_GAIN),
                                            MAX_PROPORTIONAL_GAIN)        
       self._integrator = np.minimum(np.maximum(self._integrator, -INTEGRATOR_ANTI_WINDUP_VALUE), 
