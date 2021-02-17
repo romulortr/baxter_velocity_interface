@@ -13,7 +13,7 @@ import baxter_interface
 from baxter_interface import CHECK_VERSION
 from baxter_pykdl import baxter_kinematics
 
-import joint_filter
+import filter
 
 # @TODO read these parameters from rosparam server
 
@@ -41,7 +41,7 @@ class VelocityInterface:
     self._integrator =np.zeros(self._nb_joints)
     
     # Estimator parameters
-    self._velocity_filter = joint_filter.FIRFilter(filter='mean', nb_samples=10) 
+    self._velocity_filter = filter.FIRFilter(filter='mean', nb_samples=10, dim=7) 
 
     # internal varialbes
     self._current_joint_velocity = np.zeros(self._nb_joints)
